@@ -18,30 +18,70 @@ clients = {}
 if not os.path.exists("shared_files"):
     os.makedirs("shared_files")
 
-# Setup function to initialize the server
-def setup():
-    # Printing the heading "IP MESSENGER" at the centre with the help of formatting
-    print('\033[95m' + "{:^80}".format("IP MESSENGER") + '\033[0m')
+# Function to handle the client
+def handleClient(client, name):
+    global clients
 
-    # Getting the global variables along with its values
-    global SERVER
-    global IP_ADDRESS
-    global PORT
+    # Running an infinite loop to receive incoming messages from the client
+    while True:
+        try:
+            # Receiving the message from the client
+            message = client.recv(BUFFER_SIZE).decode()
 
-    # Creating a socket for the server
-    SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Splitting the message to get the command and the data
+            command, data = message.split("|")
 
-    # Binding the server to the IP address and the port number
-    SERVER.bind((IP_ADDRESS, PORT))
+            # Checking the command type
+            if command == "CONNECT":
+                clients[name]["connected_with"] = data
+                clients[data]["connected_with"] = name
 
-    # Listening for maximum 100 incoming connections
-    SERVER.listen(100)
+            elif command == "SEND":
+                clients[clients[name]["connected_with"]]["client"].send(f"{name}|{data}".encode())
 
-    # Printing the waiting message at the centre with the help of formatting
-    print('\033[93m' + "{:^80}".format("Waiting for incoming connections...") + '\033[0m')
+            elif command == "DISCONNECT":
+                clients[clients[name]["connected_with"]]["client"].send(f"{name} has disconnected".encode())
+                clients[name]["connected_with"] = ""
+                clients[clients[name]["connected_with"]]["connected_with"] = ""
 
-    # Calling the accept connections function
-    acceptConnections()
+            elif command == "FILE":
+                clients[clients[name]["connected_with"]]["file_name"] = data
+
+            elif command == "SENDFILE":
+                file_name = clients[name]["file_name"]
+                file_size = clients[name]["file_size"]
+                file_path = os.path.join("shared_files", file_name)
+
+                with open(file_path, "wb") as file:
+                    while file_size > 0:
+                        if file_size >= BUFFER_SIZE:
+                            data = client.recv(BUFFER_SIZE)
+                        else:
+                            data = client.recv(file_size)
+                        file.write(data)
+                        file_size -= BUFFER_SIZE
+
+                clients[clients[name]["connected_with"]]["client"].send(f"{name}|{file_name}".encode())
+
+            elif command == "RECEIVEFILE":
+                file_name = data
+                file_path = os.path.join("shared_files", file_name)
+                file_size = os.path.getsize(file_path)
+
+                clients[name]["client"].send(f"FILE|{file_name}|{file_size}".encode())
+
+                with open(file_path, "rb") as file:
+                    while file_size > 0:
+                        if file_size >= BUFFER_SIZE:
+                            data = file.read(BUFFER_SIZE)
+                        else:
+                            data = file.read(file_size)
+                        clients[name]["client"].send(data)
+                        file_size -= BUFFER_SIZE
+
+        except Exception as e:
+            print(e)
+            break
 
 # Function to accept connections from the client
 def acceptConnections():
@@ -80,6 +120,31 @@ def FTP():
     # Creating an FTP server object
     server = FTPServer((IP_ADDRESS, 21), handler)
     server.serve_forever()
+
+# Setup function to initialize the server
+def setup():
+    # Printing the heading "IP MESSENGER" at the centre with the help of formatting
+    print('\033[95m' + "{:^80}".format("IP MESSENGER") + '\033[0m')
+
+    # Getting the global variables along with its values
+    global SERVER
+    global IP_ADDRESS
+    global PORT
+
+    # Creating a socket for the server
+    SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Binding the server to the IP address and the port number
+    SERVER.bind((IP_ADDRESS, PORT))
+
+    # Listening for maximum 100 incoming connections
+    SERVER.listen(100)
+
+    # Printing the waiting message at the centre with the help of formatting
+    print('\033[93m' + "{:^80}".format("Waiting for incoming connections...") + '\033[0m')
+
+    # Calling the accept connections function
+    acceptConnections()
 
 # Create and start a thread on the server side
 setup_thread = Thread(target=setup)

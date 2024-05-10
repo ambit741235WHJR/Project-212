@@ -44,8 +44,45 @@ def browseFiles():
             ftp_server.storbinary(f'STOR {fname}', file)
         ftp_server.dir()
         ftp_server.quit()
+
+        # Inserting the songs into the listbox
+        songs_listbox.insert(song_counter, fname)
+        song_counter += 1
     except FileNotFoundError:
         print("File Dialog has been closed without selecting any file")
+
+# Function to download the songs
+def download():
+    # Getting the selected song from the listbox to download
+    song_to_download = songs_listbox.get(ANCHOR)
+    info_label.config(text=f"Downloading {song_to_download}")
+
+    # FTP Credentials to connect to the FTP Server
+    HOSTNAME = "127.0.0.1"
+    USERNAME = "lftpd"
+    PASSWORD = "lftpd"
+
+    # Navigating to the Downloads directory of the user and downloading the song file(s) from the FTP Server
+    home = str(Path.home())
+    download_path = f"{home}/Downloads"
+    ftp_server = FTP(HOSTNAME, USERNAME, PASSWORD)
+    ftp_server.encoding = 'utf-8'
+    local_filename = os.path.join(download_path, song_to_download)
+    file = open(local_filename, 'wb')
+    ftp_server.retrbinary(f'RETR {song_to_download}', file.write)
+    ftp_server.dir()
+    file.close()
+    ftp_server.quit()
+
+    # Displaying the information in the info label
+    info_label.config(text=f"Downloaded {song_to_download} to {download_path}")
+    
+    # Changing the information in the info label after 5 seconds
+    time.sleep(5)
+    if(song_selected != None):
+        info_label.config(text=f"Playing {song_selected}")
+    else:
+        info_label.config(text="Please select a song to play")
 
 # Function to play the songs
 def play():
@@ -59,8 +96,28 @@ def play():
     # Playing the selected song
     pygame
     mixer.init()
-    mixer.music.load(f"shared_files/{song_selected}")
+
+    # FTP Credentials to connect to the FTP Server
+    HOSTNAME = "127.0.0.1"
+    USERNAME = "lftpd"
+    PASSWORD = "lftpd"
+    
+    # Navigating to the shared_files directory of the user and playing the song file(s)
+    ftp_server = FTP(HOSTNAME, USERNAME, PASSWORD)
+    ftp_server.encoding = 'utf-8'
+    if not os.path.exists("shared_files_temp"):
+        os.makedirs("shared_files_temp")
+    local_filename = os.path.join("shared_files_temp", song_selected)
+    file = open(local_filename, 'wb')
+    ftp_server.retrbinary(f'RETR {song_selected}', file.write)
+    ftp_server.dir()
+    file.close()
+    ftp_server.quit()
+
+    # Playing the song
+    mixer.music.load(local_filename)
     mixer.music.play()
+
     if(song_selected != None):
         info_label.config(text=f"Playing {song_selected}")
     else:
@@ -75,7 +132,13 @@ def stop():
     pygame
     mixer.init()
     mixer.music.stop()
+    mixer.music.unload()
     info_label.config(text=f"Stopped {song_selected}")
+
+    # Deleting the temporary directory along with the song file
+    if os.path.exists("shared_files_temp"):
+        os.remove(f"shared_files_temp/{song_selected}")
+        os.rmdir("shared_files_temp")
 
 # Function to pause the songs
 def pause():
@@ -127,10 +190,23 @@ def musicWindow():
     songs_listbox.place(x=10, y=18)
 
     # Getting music files from the system
-    for file in os.listdir('shared_files'):
-        filename = os.fsdecode(file)
-        songs_listbox.insert(song_counter, filename)
+    #for file in os.listdir('shared_files'):
+    #    filename = os.fsdecode(file)
+    #    songs_listbox.insert(song_counter, filename)
+    #    song_counter += 1
+
+    # Getting music files from the FTP Server
+    HOSTNAME = "127.0.0.1"
+    USERNAME = "lftpd"
+    PASSWORD = "lftpd"
+    ftp_server = FTP(HOSTNAME, USERNAME, PASSWORD)
+    ftp_server.encoding = 'utf-8'
+    ftp_server.dir()
+    files = ftp_server.nlst()
+    for file in files:
+        songs_listbox.insert(song_counter, file)
         song_counter += 1
+    ftp_server.quit()
 
     # Creating a scrollbar for the listbox
     scrollbar = Scrollbar(songs_listbox)
@@ -158,7 +234,7 @@ def musicWindow():
     upload_button.place(x=30, y=250)
 
     # Creating a button to download the song
-    download_button = Button(music_window, text="Download", width=10, bd=1, bg='SkyBlue', font=('Calibri', 10))
+    download_button = Button(music_window, text="Download", width=10, bd=1, bg='SkyBlue', font=('Calibri', 10), command=download)
     download_button.place(x=200, y=250)
 
     # Creating an info label
