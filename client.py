@@ -1,14 +1,22 @@
 # Importing the necessary libraries
-import socket
+import socket, pygame, os, time
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
+from pygame import mixer
+from playsound import playsound
 
 # Declaring the global variables
 IP_ADDRESS = '127.0.0.1'
 PORT = 8000
 BUFFER_SIZE = 4096
 SERVER = None
+
+# Creating more global variables
+songs_listbox = None
+info_label = None
+song_counter = 0
+song_selected = None
 
 # Setup function to initialize the client
 def setup():
@@ -26,8 +34,44 @@ def setup():
     # Calling the music window function
     musicWindow()
 
+# Function to play the songs
+def play():
+    # Declaring the required global variables
+    global song_selected
+    global songs_listbox
+
+    # Getting the selected song from the listbox
+    song_selected = songs_listbox.get(ANCHOR)
+
+    # Playing the selected song
+    pygame
+    mixer.init()
+    mixer.music.load(f"shared_files/{song_selected}")
+    mixer.music.play()
+    if(song_selected != None):
+        info_label.config(text=f"Playing {song_selected}")
+    else:
+        info_label.config(text="Please select a song to play")
+
+# Function to stop the songs
+def stop():
+    # Declaring the required global variables
+    global song_selected
+    
+    # Stopping the selected song
+    pygame
+    mixer.init()
+    mixer.music.load(f"shared_files/{song_selected}")
+    mixer.music.stop()
+    info_label.config(text=f"Stopped {song_selected}")
+
 # Creating the GUI for the music window
 def musicWindow():
+    # Declaring the global variables
+    global song_counter
+    global songs_listbox
+    global info_label
+
     # Creating a new window
     music_window = Tk()
 
@@ -48,17 +92,23 @@ def musicWindow():
     songs_listbox = Listbox(music_window, width=39, height=10, activestyle='dotbox', bg='LightSkyBlue', borderwidth=2, font=('Calibri', 10))
     songs_listbox.place(x=10, y=18)
 
+    # Getting music files from the system
+    for file in os.listdir('shared_files'):
+        filename = os.fsdecode(file)
+        songs_listbox.insert(song_counter, filename)
+        song_counter += 1
+
     # Creating a scrollbar for the listbox
     scrollbar = Scrollbar(songs_listbox)
     scrollbar.place(relheight=1, relx=1)
     scrollbar.config(command=songs_listbox.yview)
 
     # Creating a button to play the selected song
-    play_button = Button(music_window, text="Play", width=10, bd=1, bg='SkyBlue', font=('Calibri', 10))
+    play_button = Button(music_window, text="Play", width=10, bd=1, bg='SkyBlue', font=('Calibri', 10), command=play)
     play_button.place(x=30, y=200)
 
     # Creating a button to stop the selected song
-    stop_button = Button(music_window, text="Stop", width=10, bg='SkyBlue', font=('Calibri', 10))
+    stop_button = Button(music_window, text="Stop", width=10, bg='SkyBlue', font=('Calibri', 10), command=stop)
     stop_button.place(x=200, y=200)
 
     # Creating a button to upload the song

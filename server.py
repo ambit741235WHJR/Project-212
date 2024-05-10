@@ -45,7 +45,18 @@ def acceptConnections():
     # Running an infinite loop to accept incoming connections
     while True:
         client, addr = SERVER.accept()
-        print(client, addr)
+        client_name = client.recv(4096).decode().lower()
+        clients[client_name] = {
+            "client": client,
+            "address": addr,
+            "connected_with": "",
+            "file_name": "",
+            "file_size": 4096
+        }
+
+        print(f"Connection established with {client_name} : {addr}")
+        thread = Thread(target=handleClient, args=(client, client_name,))
+        thread.start()
 
 # Create and start a thread on the server side
 setup_thread = Thread(target=setup)
