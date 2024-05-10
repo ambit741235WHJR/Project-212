@@ -1,5 +1,5 @@
 # Importing necessary libraries
-import socket
+import socket, os
 from threading import Thread
 
 # Declaring the global variables
@@ -10,6 +10,10 @@ BUFFER_SIZE = 4096
 
 # Creating an empty clients dictionary
 clients = {}
+
+# Checking the existence of the folder named "shared_files"
+if not os.path.exists("shared_files"):
+    os.makedirs("shared_files")
 
 # Setup function to initialize the server
 def setup():

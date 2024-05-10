@@ -61,9 +61,30 @@ def stop():
     # Stopping the selected song
     pygame
     mixer.init()
-    mixer.music.load(f"shared_files/{song_selected}")
     mixer.music.stop()
     info_label.config(text=f"Stopped {song_selected}")
+
+# Function to pause the songs
+def pause():
+    # Declaring the required global variables
+    global song_selected
+    
+    # Pausing the selected song
+    pygame
+    mixer.init()
+    mixer.music.pause()
+    info_label.config(text=f"Paused {song_selected}")
+
+# Function to resume the songs
+def resume():
+    # Declaring the required global variables
+    global song_selected
+    
+    # Resuming the selected song
+    pygame
+    mixer.init()
+    mixer.music.unpause()
+    info_label.config(text=f"Resumed {song_selected}")
 
 # Creating the GUI for the music window
 def musicWindow():
@@ -79,7 +100,7 @@ def musicWindow():
     music_window.title("Music Player")
 
     # Setting the geometry of the window
-    music_window.geometry('300x300')
+    music_window.geometry('300x350')
     
     # Setting the background of the window
     music_window.configure(bg='LightSkyBlue')
@@ -111,6 +132,14 @@ def musicWindow():
     stop_button = Button(music_window, text="Stop", width=10, bg='SkyBlue', font=('Calibri', 10), command=stop)
     stop_button.place(x=200, y=200)
 
+    # Creating a button to resume the selected song
+    resume_button = Button(music_window, text="Resume", width=10, bd=1, bg='SkyBlue', font=('Calibri', 10), command=resume)
+    resume_button.place(x=30, y=300)
+
+    # Creating a button to pause the selected song
+    pause_button = Button(music_window, text="Pause", width=10, bd=1, bg='SkyBlue', font=('Calibri', 10), command=pause)
+    pause_button.place(x=200, y=300)
+
     # Creating a button to upload the song
     upload_button = Button(music_window, text="Upload", width=10, bd=1, bg='SkyBlue', font=('Calibri', 10))
     upload_button.place(x=30, y=250)
@@ -121,7 +150,7 @@ def musicWindow():
 
     # Creating an info label
     info_label = Label(music_window, text="", fg='Blue', font=('Calibri', 8))
-    info_label.place(x=4, y=280)
+    info_label.place(x=4, y=330)
 
     # Running the main loop
     music_window.mainloop()
