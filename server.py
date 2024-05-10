@@ -1,6 +1,9 @@
 # Importing necessary libraries
 import socket, os
 from threading import Thread
+from pyftpdlib.authorizers import DummyAuthorizer
+from pyftpdlib.handlers import FTPHandler
+from pyftpdlib.servers import FTPServer
 
 # Declaring the global variables
 IP_ADDRESS = '127.0.0.1'
@@ -62,6 +65,26 @@ def acceptConnections():
         thread = Thread(target=handleClient, args=(client, client_name,))
         thread.start()
 
+# Function to create and run an FTP server
+def FTP():
+    global IP_ADDRESS
+
+    # Creating an authorizer object
+    authorizer = DummyAuthorizer()
+    authorizer.add_user("lftpd", "lftpd", "shared_files", perm="elradfmw")
+
+    # Creating an FTP handler object
+    handler = FTPHandler
+    handler.authorizer = authorizer
+
+    # Creating an FTP server object
+    server = FTPServer((IP_ADDRESS, 21), handler)
+    server.serve_forever()
+
 # Create and start a thread on the server side
 setup_thread = Thread(target=setup)
 setup_thread.start()
+
+# Create and start a thread on the FTP server side
+ftp_thread = Thread(target=FTP)
+ftp_thread.start()

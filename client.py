@@ -1,10 +1,12 @@
 # Importing the necessary libraries
-import socket, pygame, os, time
+import socket, pygame, os, time, ftplib, ntpath
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 from pygame import mixer
 from playsound import playsound
+from ftplib import FTP
+from pathlib import Path
 
 # Declaring the global variables
 IP_ADDRESS = '127.0.0.1'
@@ -17,22 +19,33 @@ songs_listbox = None
 info_label = None
 song_counter = 0
 song_selected = None
+filePathLabel = None
 
-# Setup function to initialize the client
-def setup():
-    # Getting the global variables along with its values
-    global SERVER
-    global IP_ADDRESS
-    global PORT
+# Function to browse files
+def browseFiles():
+    global songs_listbox
+    global song_counter
+    global filePathLabel
 
-    # Creating a socket for the client
-    SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        # Creating the file dialog object for browsing the MP3, WAV, OGG files
+        filename = filedialog.askopenfilename(filetypes=[("Audio Files", "*.mp3 *.wav *.ogg"), ("All Files", "*.*")])
 
-    # Connecting the client to the server
-    SERVER.connect((IP_ADDRESS, PORT))
+        # FTP Credentials to connect to the FTP Server
+        HOSTNAME = "127.0.0.1"
+        USERNAME = "lftpd"
+        PASSWORD = "lftpd"
 
-    # Calling the music window function
-    musicWindow()
+        # Connecting to the FTP Server and uploading the song file(s)
+        ftp_server = FTP(HOSTNAME, USERNAME, PASSWORD)
+        ftp_server.encoding = 'utf-8'
+        fname = ntpath.basename(filename)
+        with open(filename, 'rb') as file:
+            ftp_server.storbinary(f'STOR {fname}', file)
+        ftp_server.dir()
+        ftp_server.quit()
+    except FileNotFoundError:
+        print("File Dialog has been closed without selecting any file")
 
 # Function to play the songs
 def play():
@@ -141,7 +154,7 @@ def musicWindow():
     pause_button.place(x=200, y=300)
 
     # Creating a button to upload the song
-    upload_button = Button(music_window, text="Upload", width=10, bd=1, bg='SkyBlue', font=('Calibri', 10))
+    upload_button = Button(music_window, text="Upload", width=10, bd=1, bg='SkyBlue', font=('Calibri', 10), command=browseFiles)
     upload_button.place(x=30, y=250)
 
     # Creating a button to download the song
@@ -154,6 +167,22 @@ def musicWindow():
 
     # Running the main loop
     music_window.mainloop()
+
+# Setup function to initialize the client
+def setup():
+    # Getting the global variables along with its values
+    global SERVER
+    global IP_ADDRESS
+    global PORT
+
+    # Creating a socket for the client
+    SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Connecting the client to the server
+    SERVER.connect((IP_ADDRESS, PORT))
+
+    # Calling the music window function
+    musicWindow()
 
 # Running the setup function
 setup()
